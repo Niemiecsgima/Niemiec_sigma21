@@ -1,0 +1,51 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const path = require('path');
+
+const app = express();
+const port = 3000;
+
+// Połączenie z MongoDB
+mongoose.connect('mongodb://localhost/todo-app', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Definiowanie schematu
+const todoSchema = new mongoose.Schema({
+  item: String,
+});
+
+const Todo = mongoose.model('Todo', todoSchema);
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Obsługa głównej strony
+app.get('/', async (req, res) => {
+  const todos = await Todo.find();
+  res.render('index', { todos });
+});
+
+// Dodanie nowego zadania
+app.post('/add', async (req, res) => {
+  const newTodo = new Todo({
+    item: req.body.item,
+  });
+  await newTodo.save();
+  res.redirect('/');
+});
+
+// Usunięcie zadania
+app.post('/delete', async (req, res) => {
+  await Todo.findByIdAndRemove(req.body.todoId);
+  res.redirect('/');
+});
+
+// Uruchomienie serwera
+app.listen(port, () => {
+  console.log(`Serwer działa na http://localhost:${port}`);
+});
